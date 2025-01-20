@@ -1,0 +1,25 @@
+import boto3
+import json
+from decimal import Decimal
+
+# Custom serializer for Decimal objects
+class DecimalEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, Decimal):
+            return float(obj)  # Convert Decimal to float
+        return super(DecimalEncoder, self).default(obj)
+
+def lambda_handler(event, context):
+    dynamodb = boto3.resource('dynamodb', region_name='eu-north-1')
+    table = dynamodb.Table('Movies')
+    
+    # Fetch all items from DynamoDB
+    response = table.scan()
+    movies = response.get('Items', [])
+    
+    # Serialize response with custom encoder
+    return {
+        'statusCode': 200,
+        'headers': {'Content-Type': 'application/json'},
+        'body': json.dumps(movies, cls=DecimalEncoder)
+    }
